@@ -1,0 +1,25 @@
+{
+  "name": "throttle-promise",
+  "version": "1.0.0",
+  "description": "throttles a function (wraps function in promise, so non-promises allowed)",
+  "main": "throttle-promise.js",
+  "scripts": {
+    "test-watch": "mocha test --watch",
+    "test": "mocha test"
+  },
+  "keywords": [
+    "promise",
+    "throttle",
+    "debounce"
+  ],
+  "author": "fresidue",
+  "license": "ISC",
+  "dependencies": {
+    "delay": "^3.0.0",
+    "lodash": "^4.17.10"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0",
+    "sinon": "^5.0.10"
+  }
+}

@@ -1,0 +1,44 @@
+The choice is really for leading and middle (trailing always comes along for the ride)
+
+Leading point: previous
+
+
+leading && middle && trailing && wait===5
+----L----M----M----M----M----M----c
+----Y-yY--yy-Y--Y----y-Y--Y--------
+
+leading && middle && !trailing && wait===5
+----L----M----M----M----M----Mc--
+----Y-yY--yy-Y--Y----y-Y--Y-------
+
+
+
+!leading && middle && trailing && wait===5
+----c----M----M----M----M----M----c
+----y-yY--yy-Y--Y----y-Y--Y--------
+
+!leading && middle && !trailing && wait===5
+----l----------------Tl---------T
+----y-yy--yy-y--Y-----y-y--Y-----
+
+
+
+
+If !middle Then trailing
+
+
+leading && !middle && trailing && wait===5
+----L----------------T-----L-----T
+----Y-yy--yy-y--Y-----y-Y---Y-----
+
+
+!leading && !middle && trailing && wait===5
+----c----------------Tc---------T
+----y-yy--yy-y--Y-----y-y--Y-----
+
+
+leading && !middle && !trailing
+NOT ALLOWED
+
+!leading && !middle && !trailing
+NOT ALLOWED
