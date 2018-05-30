@@ -3,28 +3,39 @@
 const assert = require('assert');
 const _ = require('lodash');
 const delay = require('delay');
+const timeSpan = require('time-span');
 const sinon = require('sinon');
 
 const throttle = require('./')
 
+console.log('\n\n\n\n\n\n\n');
+
 // fn = throttled function
-// dataStack = {time, args}
-const runSeries = (fn, dataStack, cb, done) => {
+// argsStack = {time, args}
+// cb - extra stuff
+// done - the mocha done callback
+const runSeries = (fn, argsStack, cb, done) => {
   const loop = (start, stack) => {
     // execute
     const {args} = stack.shift();
     // console.log('LKLKJLKJ = ', args);
     const isLast = !stack.length;
     if (stack.length % 10 === 0) {
-      console.log(stack.length + 'left');
+      console.info(stack.length + 'left');
     }
     fn.apply(null, args)
       .then(res => {
-        console.log('***********   args = ', args, ' res = ', res);
+        console.info('***********   args = ', args, ' res = ', res);
         return res;
       })
-      .then(res => (cb && cb(res)))
-      .then(() => (isLast && done()));
+      .then(res => {
+        cb && cb(res);
+        isLast && done();
+      })
+      .catch(err => {
+        cb && cb(err);
+        isLast && done();
+      });
     if (stack.length) {
       const {time} = stack[0];
       const now = Date.now();
@@ -34,54 +45,151 @@ const runSeries = (fn, dataStack, cb, done) => {
       });
     }
   };
-  loop(Date.now(), dataStack);
-};
-
-console.log('\n\n\n\n\n\n\n');
-
-const createLetters = num => {
-  const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const sub = letters.substring(0, num);
-  return _.map(sub, x => ({[x]: x}));
+  loop(Date.now(), argsStack);
 };
 
 const createObjectsStack = times => {
-  const letters = createLetters(times.length);
-  return _.map(_.zip(times, letters), ([time, obj]) => ({time, args: [obj]}));
+  const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  return _.map(times, (time, index) => {
+    const a = letters[index];
+    return {time, args: [{[a]: a}]};
+  });
 };
 
 const createNumbersStack = times => {
   return _.map(times, (time, index) => ({time, args: [index + 1]}));
 };
 
-describe('!!leading && !!middle', () => {
-  // stuff we'll be working with
-  const results = []; // will get filled up
-  const wait = 100;
+const isApproximatelyOver = (a, b) => {
+  return a > (b - 2) && a < (b + 16);
+};
 
-  const times = [0, 20, 40, 60, 129, 169, 222]; // a - g (7 elts)
-  const stack = createNumbersStack(times);
-  // const fn = throttle(obj => delay(10).then(() => obj), {wait});
-  const fn = throttle(a => a, {wait});
-  const cb = res => results.push(res);
+// ////
+//
+// // testing 0
+//
+// ////
 
-  before('', done => {
-    runSeries(fn, stack, cb, done);
-  });
+const testFlagsConfigs = [
+  {
+    describe: 'if leading && middle',
+    options: {
+      wait: 100,
+      leading: true,
+      middle: true
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumExecuted: 4,
+    expectedCompacted: [1, 4, 6, 7],
+    expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
+  },
+  {
+    describe: 'if !leading && middle',
+    options: {
+      wait: 100,
+      leading: false,
+      middle: true
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumExecuted: 3,
+    expectedCompacted: [4, 6, 7],
+    expectedResTimes: [20, 40, 60, 100, 169, 200, 300],
+  },
+  {
+    describe: 'if !leading && !middle',
+    options: {
+      wait: 100,
+      leading: false,
+      middle: false
+    },
+    fn: a => a,
+    times: [0, 20, 40, 155, 189, 300, 310],
+    stackCreator: createNumbersStack,
+    expectedNumExecuted: 3,
+    expectedCompacted: [3, 5, 7],
+    expectedResTimes: [20, 40, 140, 189, 289, 310, 410],
+  },
+  {
+    describe: 'using promises as input should work',
+    options: {
+      wait: 100,
+      leading: true,
+      middle: true
+    },
+    fn: a => delay(20, a),
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumExecuted: 4,
+    expectedCompacted: [1, 4, 6, 7],
+    expectedResTimes: [20, 40, 60, 120, 169, 220, 320],
+  },
 
-  it('should have 7 results', () => {
-    console.log('results = ', results);
-    assert(results.length === 7, 'only has ' + results.length + ' results');
-  });
-  it('of which 4 should not be null', () => {
-    assert(_.compact(results).length === 4);
-  });
-  it('aggregating results should give expected', () => {
-    assert(_.isEqual(_.compact(results), [1, 4, 6, 7]));
+];
+
+_.each(testFlagsConfigs, config => {
+  describe(config.describe, () => {
+    // set up the callback reporting
+    let duration = null;
+    const results = []; // will get filled up
+    const resTimes = [];
+    const cb = res => {
+      resTimes.push(duration());
+      results.push(res);
+    };
+
+    // create the data
+    const fn = throttle(config.fn, config.options);
+    const stack = config.stackCreator(config.times);
+    before('run series', done => {
+      duration = timeSpan();
+      runSeries(fn, stack, cb, done);
+    });
+
+    // and run the tests
+    const numTotal = config.times.length;
+    it('should have ' + numTotal + ' results', () => {
+      console.log('res = ', results);
+      assert(results.length === numTotal);
+    });
+
+    if (config.expectedNumExecuted) {
+      it('of which 3 should not be null', () => {
+        assert(_.compact(results).length === config.expectedNumExecuted);
+      });
+    }
+
+    if (config.expectedCompacted) {
+      it('expecting compacted responses to be ' + config.expectedCompacted, () => {
+        assert(_.isEqual(_.compact(results), config.expectedCompacted));
+      });
+    }
+
+    if (config.expectedResTimes) {
+      it('should have reasonable response times', () => {
+        console.log('response times = ', resTimes);
+        console.log('expected = ', config.expectedResTimes);
+        assert(resTimes.length === 7, 'not enough restimes');
+        assert(_.every(resTimes, t => _.isFinite(t) && t > 0));
+        assert(_.every(resTimes, (t, i) => {
+          return isApproximatelyOver(t, config.expectedResTimes[i]);
+        }));
+      });
+    }
   });
 });
 
-// describe('numers stress', () => {
+// ////
+//
+// // testing
+//
+// ////
+
+
+// describe('numbers stress', () => {
 //   // stuff we'll be working with
 //   const results = []; // will get filled up
 //   const wait = 100;
@@ -110,105 +218,4 @@ describe('!!leading && !!middle', () => {
 //     console.log('compact res = ', _.compact(results));
 //     assert(results.length === num, 'only has ' + results.length + ' results');
 //   });
-//   // it('of which 4 should not be null', () => {
-//   //   assert(_.compact(results).length === 4);
-//   // });
-//   // it('aggregating results should give expected', () => {
-//   //   const acc = _.map(_.compact(results), obj => _.keys(obj)[0]);
-//   //   console.log('acc = ', acc);
-//   //   const expected = ['a', 'd', 'f', 'g'];
-//   //   assert(_.isEqual(acc, expected));
-//   // });
 // });
-
-// describe('!leading && !!middle', () => {
-//   // stuff we'll be working with
-//   const results = []; // will get filled up
-//   const wait = 100;
-//   const times = [0, 20, 40, 60, 129, 169, 222]; // a - g (7 elts)
-//   const stack = createObjectsStack(times);
-//   const fn = throttle(obj => delay(10).then(() => obj), {wait, leading: false});
-//   const cb = res => results.push(res);
-//
-//   console.log('stack', stack);
-//   before('', done => {
-//     runSeries(fn, stack, cb, done);
-//   });
-//
-//   it('should have results 7', () => {
-//     console.log('res = ', results);
-//     assert(results.length === 7);
-//   });
-//   it('of which 3 should not be null', () => {
-//     assert(_.compact(results).length === 3);
-//   });
-//   it('aggregating results should give expected', () => {
-//     const acc = _.map(_.compact(results), obj => _.keys(obj)[0]);
-//     console.log('acc = ', acc);
-//     const expected = ['d', 'f', 'g'];
-//     assert(_.isEqual(acc, expected));
-//   });
-// });
-//
-// describe('!leading && !middle', () => {
-//   // stuff we'll be working with
-//   const results = []; // will get filled up
-//   const wait = 100;
-//   const times = [
-//     0,
-//     20,
-//     40, // should be trailing
-//     155,
-//     189, //this one too
-//     300,
-//     310, // and this one
-//   ];
-//   const stack = createObjectsStack(times);
-//   const fn = throttle(obj => delay(10).then(() => obj), {wait, leading: false, middle: false});
-//   const cb = res => results.push(res);
-//
-//   console.log('stack', stack);
-//   before('', done => {
-//     runSeries(fn, stack, cb, done);
-//   });
-//
-//   it('should have results 7', () => {
-//     console.log('res = ', results);
-//     assert(results.length === 7);
-//   });
-//   it('of which 3 should not be null', () => {
-//     assert(_.compact(results).length === 3);
-//   });
-//   it('aggregating results should give expected', () => {
-//     const acc = _.map(_.compact(results), obj => _.keys(obj)[0]);
-//     console.log('acc = ', acc);
-//     const expected = ['c', 'e', 'g'];
-//     assert(_.isEqual(acc, expected));
-//   });
-// });
-//
-// testing
-//
-// const throttled = throttle(a => a, {
-// // const throttled = throttleP(a => delay(20).then(() => a), {
-//   wait: 1000
-// });
-//
-// const loop = (num, max) => {
-//   throttled(num)
-//     .then(res => {
-//       console.log('loop ' + num + ' res = ', res);
-//     })
-//     .catch(err => {
-//       console.log('err = ', err.message);
-//     });
-//   const next = num + 1;
-//   if (next < max) {
-//     delay(400)
-//       .then(() => {
-//         loop(next, max);
-//       });
-//   }
-// };
-//
-// loop(0, 4)

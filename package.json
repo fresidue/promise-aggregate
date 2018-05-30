@@ -1,7 +1,7 @@
 {
-  "name": "throttle-promise",
+  "name": "promise-aggregator",
   "version": "1.0.0",
-  "description": "throttles a function (wraps function in promise, so non-promises allowed)",
+  "description": "Aggregates multiple function calls (promises or not), making sure the (expensive) function call (e.g. network). It's basically debounce, but all the good names were taken. Extra options make input aggregation and timing parameters configurable",
   "main": "throttle-promise.js",
   "scripts": {
     "test-watch": "mocha test --watch",
@@ -10,7 +10,10 @@
   "keywords": [
     "promise",
     "throttle",
-    "debounce"
+    "debounce",
+    "async",
+    "aggregate",
+    "aggregator"
   ],
   "author": "fresidue",
   "license": "ISC",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "mocha": "^5.2.0",
-    "sinon": "^5.0.10"
+    "sinon": "^5.0.10",
+    "time-span": "^2.0.0"
   }
 }
