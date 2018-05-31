@@ -5,13 +5,13 @@ const _ = require('lodash');
 const delay = require('delay');
 
 const modes = {
-  NULL: 'NULL',     // default
+  NULL: 'NULL', // default
   ERROR: 'ERROR',
   REPEAT: 'REPEAT'
 };
 
 const defaultOptions = {
-  wait: 200,
+  wait: 300, // ms
   mode: modes.NULL,
   leading: true,
   middle: true,
@@ -45,10 +45,10 @@ const throttleP = (inputFn, opts) => {
       // i.e. the cancel function was called before delay was done
       // Inside this if case, scheduled !== state.scheduled (!!)
       if (wasCancelled) {
-        if (state.mode === modes.REPEAT) {
+        if (options.mode === modes.REPEAT) {
           // wasCancelled holds the next schedule to be made
           return wasCancelled;
-        } else if (state.mode === modes.ERROR) {
+        } else if (options.mode === modes.ERROR) {
           return Promise.reject(new Error('scheduled throttle-event was cancelled'))
         } else { // modes.NULL
           return null;
@@ -104,7 +104,7 @@ const throttleP = (inputFn, opts) => {
       // console.log('wait = ', wait, '  ( ', middleWait + ' , ' + options.wait + ' )');
       state.scheduled = schedule(wait);
       state.args = options.replaceArgs(args, oldState.args);
-      oldState.scheduled.cancel(state.mode === modes.REPEAT ? state.scheduled : true);
+      oldState.scheduled.cancel(options.mode === modes.REPEAT ? state.scheduled : true);
       return state.scheduled;
     }
   };

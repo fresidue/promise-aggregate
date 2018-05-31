@@ -18,9 +18,8 @@ const runSeries = (fn, argsStack, cb, done) => {
   const loop = (start, stack) => {
     // execute
     const {args} = stack.shift();
-    // console.log('LKLKJLKJ = ', args);
     const isLast = !stack.length;
-    if (stack.length % 10 === 0) {
+    if (stack.length % 20 === 0) {
       console.info(stack.length + 'left');
     }
     fn.apply(null, args)
@@ -61,27 +60,39 @@ const createNumbersStack = times => {
 };
 
 const isApproximatelyOver = (a, b) => {
-  return a > (b - 2) && a < (b + 16);
+  return a > (b - 2) && a < (b + 23);
+};
+
+const compactResults = (results, mode = throttle.modes.NULL) => {
+  switch (mode) {
+    case throttle.modes.NULL:
+      return _.compact(results);
+    case throttle.modes.REPEAT:
+      return _.uniq(results);
+    case throttle.modes.ERROR:
+      return _.compact(_.map(results, r => r instanceof Error ? null : r));
+    default:
+      throw new Error('invalid mode');
+  }
 };
 
 // ////
 //
-// // testing 0
+// // testing
 //
 // ////
 
-const testFlagsConfigs = [
+const testConfigs = [
   {
     describe: 'if leading && middle',
     options: {
       wait: 100,
-      leading: true,
-      middle: true
     },
     fn: a => a,
     times: [0, 20, 40, 60, 129, 169, 222],
     stackCreator: createNumbersStack,
-    expectedNumExecuted: 4,
+    expectedNumNulls: 3,
+    expectedNumErrors: 0,
     expectedCompacted: [1, 4, 6, 7],
     expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
   },
@@ -90,14 +101,28 @@ const testFlagsConfigs = [
     options: {
       wait: 100,
       leading: false,
-      middle: true
     },
     fn: a => a,
     times: [0, 20, 40, 60, 129, 169, 222],
     stackCreator: createNumbersStack,
-    expectedNumExecuted: 3,
+    expectedNumNulls: 4,
+    expectedNumErrors: 0,
     expectedCompacted: [4, 6, 7],
     expectedResTimes: [20, 40, 60, 100, 169, 200, 300],
+  },
+  {
+    describe: 'if leading && !middle',
+    options: {
+      wait: 100,
+      middle: false
+    },
+    fn: a => a,
+    times: [0, 20, 40, 155, 189, 300, 310],
+    stackCreator: createNumbersStack,
+    expectedNumNulls: 3,
+    expectedNumErrors: 0,
+    expectedCompacted: [1, 3, 5, 7],
+    expectedResTimes: [0, 40, 140, 189, 289, 310, 410],
   },
   {
     describe: 'if !leading && !middle',
@@ -109,7 +134,8 @@ const testFlagsConfigs = [
     fn: a => a,
     times: [0, 20, 40, 155, 189, 300, 310],
     stackCreator: createNumbersStack,
-    expectedNumExecuted: 3,
+    expectedNumNulls: 4,
+    expectedNumErrors: 0,
     expectedCompacted: [3, 5, 7],
     expectedResTimes: [20, 40, 140, 189, 289, 310, 410],
   },
@@ -117,20 +143,67 @@ const testFlagsConfigs = [
     describe: 'using promises as input should work',
     options: {
       wait: 100,
-      leading: true,
-      middle: true
     },
     fn: a => delay(20, a),
     times: [0, 20, 40, 60, 129, 169, 222],
     stackCreator: createNumbersStack,
-    expectedNumExecuted: 4,
+    expectedNumNulls: 3,
+    expectedNumErrors: 0,
     expectedCompacted: [1, 4, 6, 7],
     expectedResTimes: [20, 40, 60, 120, 169, 220, 320],
   },
-
+  {
+    describe: 'ERROR mode should work as expected',
+    options: {
+      wait: 100,
+      mode: throttle.modes.ERROR
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumNulls: 0,
+    expectedNumErrors: 3,
+    expectedCompacted: [1, 4, 6, 7],
+    expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
+  },
+  {
+    describe: 'REPEAT mode should work as expected',
+    options: {
+      wait: 100,
+      mode: throttle.modes.REPEAT
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumNulls: 0,
+    expectedNumErrors: 0,
+    expectedCompacted: [1, 4, 6, 7],
+    expectedResTimes: [0, 100, 100, 100, 200, 200, 300],
+  },
+  {
+    describe: 'custom replaceArgs() with object accumulator (assign)',
+    options: {
+      wait: 100,
+      replaceArgs: (args, prev) => {
+        const arg = _.assign({}, _.get(prev, 0), _.get(args, 0));
+        return [arg];
+      }
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createObjectsStack,
+    expectedNumNulls: 3,
+    expectedNumErrors: 0,
+    expectedCompacted: [
+      {a: 'a'},
+      {b: 'b', c: 'c', d: 'd'},
+      {e: 'e', f: 'f'},
+      {g: 'g'}],
+    expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
+  },
 ];
 
-_.each(testFlagsConfigs, config => {
+_.each(testConfigs, config => {
   describe(config.describe, () => {
     // set up the callback reporting
     let duration = null;
@@ -152,26 +225,34 @@ _.each(testFlagsConfigs, config => {
     // and run the tests
     const numTotal = config.times.length;
     it('should have ' + numTotal + ' results', () => {
-      console.log('res = ', results);
       assert(results.length === numTotal);
     });
 
-    if (config.expectedNumExecuted) {
-      it('of which 3 should not be null', () => {
-        assert(_.compact(results).length === config.expectedNumExecuted);
+    if (config.expectedNumNulls || config.expectedNumNulls === 0) {
+      it('of which ' + config.expectedNumNulls + ' should be null', () => {
+        const numNulls = _.filter(results, r => !r).length;
+        assert(numNulls === config.expectedNumNulls, 'found ' + numNulls + ', expected ' + config.expectedNumNulls);
+      });
+    }
+
+    if (config.expectedNumErrors || config.expectedNumErrors === 0) {
+      it('of which ' + config.expectedNumErrors + ' should be errors', () => {
+        const numErrors = _.filter(results, r => (r instanceof Error)).length;
+        assert(numErrors === config.expectedNumErrors, 'found ' + numErrors + ', expected ' + config.expectedNumErrors);
       });
     }
 
     if (config.expectedCompacted) {
       it('expecting compacted responses to be ' + config.expectedCompacted, () => {
-        assert(_.isEqual(_.compact(results), config.expectedCompacted));
+        const compacted = compactResults(results, config.options.mode);
+        assert(_.isEqual(compacted, config.expectedCompacted));
       });
     }
 
     if (config.expectedResTimes) {
       it('should have reasonable response times', () => {
-        console.log('response times = ', resTimes);
-        console.log('expected = ', config.expectedResTimes);
+        // console.log('response times = ', resTimes);
+        // console.log('expected = ', config.expectedResTimes);
         assert(resTimes.length === 7, 'not enough restimes');
         assert(_.every(resTimes, t => _.isFinite(t) && t > 0));
         assert(_.every(resTimes, (t, i) => {
@@ -184,7 +265,7 @@ _.each(testFlagsConfigs, config => {
 
 // ////
 //
-// // testing
+// // other testing (?)
 //
 // ////
 
