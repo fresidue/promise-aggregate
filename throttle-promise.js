@@ -81,6 +81,7 @@ const throttleP = (inputFn, opts) => {
 
   const wrapper = function (...args) {
     const oldState = _.assign({}, state);
+    const replacementArgs = options.replaceArgs(args, oldState.args);
     const now = Date.now();
     state.triggeredAt = now;
     // first deal with an idle throttle
@@ -90,9 +91,9 @@ const throttleP = (inputFn, opts) => {
       state.runAt = now; // either way this needs to be set
       if (options.leading) {
         state.args = null;
-        return Promise.resolve(inputFn.apply(null, args));
+        return Promise.resolve(inputFn.apply(null, replacementArgs));
       } else {
-        state.args = args;
+        state.args = replacementArgs;
         return state.scheduled;
       }
     }
@@ -103,7 +104,7 @@ const throttleP = (inputFn, opts) => {
       const wait = options.middle ? middleWait : options.wait;
       // console.log('wait = ', wait, '  ( ', middleWait + ' , ' + options.wait + ' )');
       state.scheduled = schedule(wait);
-      state.args = options.replaceArgs(args, oldState.args);
+      state.args = replacementArgs;
       oldState.scheduled.cancel(options.mode === modes.REPEAT ? state.scheduled : true);
       return state.scheduled;
     }

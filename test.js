@@ -185,8 +185,8 @@ const testConfigs = [
     options: {
       wait: 100,
       replaceArgs: (args, prev) => {
-        const arg = _.assign({}, _.get(prev, 0), _.get(args, 0));
-        return [arg];
+        const acc = _.assign({}, _.get(prev, 0), _.get(args, 0));
+        return [acc];
       }
     },
     fn: a => a,
@@ -199,6 +199,29 @@ const testConfigs = [
       {b: 'b', c: 'c', d: 'd'},
       {e: 'e', f: 'f'},
       {g: 'g'}],
+    expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
+  },
+  {
+    describe: 'custom replaceArgs() with array accumulator (assign)',
+    options: {
+      wait: 100,
+      replaceArgs: (args, prev) => {
+        const acc = _.get(prev, 0, []).slice();
+        acc.push(_.get(args, 0));
+        return [acc];
+      }
+    },
+    fn: a => a,
+    times: [0, 20, 40, 60, 129, 169, 222],
+    stackCreator: createNumbersStack,
+    expectedNumNulls: 3,
+    expectedNumErrors: 0,
+    expectedCompacted: [
+      [1],
+      [2, 3, 4],
+      [5, 6],
+      [7]
+    ],
     expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
   },
 ];
@@ -245,6 +268,7 @@ _.each(testConfigs, config => {
     if (config.expectedCompacted) {
       it('expecting compacted responses to be ' + config.expectedCompacted, () => {
         const compacted = compactResults(results, config.options.mode);
+        // console.log('compacted = ', compacted);
         assert(_.isEqual(compacted, config.expectedCompacted));
       });
     }
