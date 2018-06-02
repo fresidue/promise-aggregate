@@ -19,12 +19,12 @@ const runSeries = (fn, argsStack, cb, done) => {
     // execute
     const {args} = stack.shift();
     const isLast = !stack.length;
-    if (stack.length % 20 === 0) {
+    if (stack.length % 50 === 0) {
       console.info(stack.length + 'left');
     }
     fn.apply(null, args)
       .then(res => {
-        console.info('***********   args = ', args, ' res = ', res);
+        // console.info('***********   args = ', args, ' res = ', res);
         return res;
       })
       .then(res => {
@@ -224,6 +224,21 @@ const testConfigs = [
     ],
     expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
   },
+
+  {
+    describe: 'time stress (just banging on it a bit)',
+    options: {
+      wait: 100,
+    },
+    fn: a => a,
+    times: _.times(1001, i => 3 * i),
+    stackCreator: createNumbersStack,
+    expectedNumNulls: 970, // expect 31 non-nulls
+    // expectedNumErrors: 0,
+    // expectedCompacted: [1, 4, 6, 7],
+    // expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
+  },
+
 ];
 
 _.each(testConfigs, config => {
@@ -240,7 +255,8 @@ _.each(testConfigs, config => {
     // create the data
     const fn = throttle(config.fn, config.options);
     const stack = config.stackCreator(config.times);
-    before('run series', done => {
+    before('run series', function (done) {
+      this.timeout(config.times.slice().pop() * 2);
       duration = timeSpan();
       runSeries(fn, stack, cb, done);
     });
@@ -253,6 +269,7 @@ _.each(testConfigs, config => {
 
     if (config.expectedNumNulls || config.expectedNumNulls === 0) {
       it('of which ' + config.expectedNumNulls + ' should be null', () => {
+        console.log('last dur = ', resTimes.slice().pop());
         const numNulls = _.filter(results, r => !r).length;
         assert(numNulls === config.expectedNumNulls, 'found ' + numNulls + ', expected ' + config.expectedNumNulls);
       });
@@ -287,40 +304,55 @@ _.each(testConfigs, config => {
   });
 });
 
+
 // ////
 //
 // // other testing (?)
 //
 // ////
 
+describe('stress testing and other stuff that doesn\'t fit above', () => {
 
-// describe('numbers stress', () => {
-//   // stuff we'll be working with
-//   const results = []; // will get filled up
-//   const wait = 100;
-//   const num = 100;
-//   const diffs = (_.times(num - 1, () => (5 + Math.floor(Math.random() * 20))));
-//   // console.log('diffs = ', diffs);
-//
-//   const times = [0];
-//   _.each(diffs, diff => times.push(diff + times.slice().pop()));
-//   console.log('times = ', times);
-//   console.log('max = ', times.slice().pop());
-//   // // const times = [0, 20, 40, 60, 129, 169, 222]; // a - g (7 elts)
-//   const stack = createNumbersStack(times);
-//   // const fn = throttle(obj => delay(10).then(() => obj), {wait});
-//   const fn = throttle(a => a);
-//   const cb = res => results.push(res);
-//   //
-//   // console.log('stack', stack);
-//   before('', function (done) {
-//     this.timeout(times.slice().pop() + 1000);
-//     runSeries(fn, stack, cb, done);
-//   });
-//
-//   it('should have ' + num + ' results', () => {
-//     console.log('res = ' + JSON.stringify(results));
-//     console.log('compact res = ', _.compact(results));
-//     assert(results.length === num, 'only has ' + results.length + ' results');
-//   });
-// });
+  describe('with 50ms wait, call as many times as possible in 480ms (leading)', function (done) {
+    this.timeout(50000);
+    const results = [];
+    const resTimes = [];
+    // create the data
+    before('run series', done => {
+      const duration = timeSpan();
+      const fn = throttle(a => a, {wait: 25});
+      let count = 0;
+      let lastFn = null;
+      while (duration() < 501) {
+        count += 1;
+        lastFn = fn(count).then(res => {
+          results.push(res);
+          resTimes.push(duration());
+          return Promise.resolve()
+        })
+        .catch(err => {
+          console.log('got err: ', err.message);
+          return err;
+        });
+      }
+      console.log('lastFn = ', lastFn.toString());
+      lastFn.then(() => {
+        console.log('AM done&&: ', duration());
+        done();
+      });
+    });
+
+    const expected = [];
+    const expNum = 22;
+    // This one gets a bit squishy. I think it's just blowing up the
+    // execution stack (?). The resTimes just don't make any sense
+    it('expecting ca ' + expNum + ' compacted responses', () => {
+      const compacted = compactResults(results);
+      console.log('num results = ', results.length);
+      console.log('compacted = ', compacted);
+      const rt = _.map(compacted, c => resTimes[c - 1]);
+      const allowed = compacted.length <= expNum && compacted.length > 0.6 * expNum;
+      assert(allowed, 'should be around ' + expNum + ', is ' + compacted.length);
+    });
+  });
+});

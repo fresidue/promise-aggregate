@@ -23,6 +23,7 @@ const throttleP = (inputFn, opts) => {
   const options = _.assign({}, defaultOptions, opts);
   assert(typeof options.replaceArgs === 'function', 'replaceArgs is not a function');
   assert(Number.isFinite(options.wait) && options.wait > 0, 'wait is not a positive number');
+  // console.log('options = ', options);
 
   // and the mutable state of this object
   const state = {
@@ -100,16 +101,25 @@ const throttleP = (inputFn, opts) => {
     // otherwise deal with the old scheduled, and create a new
     else {
       // console.log('got args scheduled: ', state.args);
-      const middleWait = Math.max(0, oldState.runAt + options.wait - now);
+      const middleWait = oldState.runAt + options.wait - now;
       const wait = options.middle ? middleWait : options.wait;
-      // console.log('wait = ', wait, '  ( ', middleWait + ' , ' + options.wait + ' )');
-      state.scheduled = schedule(wait);
-      state.args = replacementArgs;
-      oldState.scheduled.cancel(options.mode === modes.REPEAT ? state.scheduled : true);
-      return state.scheduled;
+      // it IS an edgecase, but the timing CAN be such that wait < 0 (especially
+      // if the calls are coming in very quickly). If so, just execute directly
+      if (wait < 0) {
+        state.scheduled = schedule(options.wait);
+        state.runAt = now;
+        state.args = null;
+        const rv =  Promise.resolve(inputFn.apply(null, replacementArgs));
+        oldState.scheduled.cancel(options.mode === modes.REPEAT ? rv : true);
+        return rv;
+      } else {
+        state.scheduled = schedule(wait);
+        state.args = replacementArgs;
+        oldState.scheduled.cancel(options.mode === modes.REPEAT ? state.scheduled : true);
+        return state.scheduled;
+      }
     }
   };
-
   return wrapper;
 };
 
