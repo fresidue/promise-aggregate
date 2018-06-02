@@ -1,7 +1,7 @@
 {
   "name": "promise-aggregator",
   "version": "1.0.0",
-  "description": "Aggregates multiple function calls (promises or not), making sure the (expensive) function call (e.g. network). It's basically debounce, but all the good names were taken. Extra options make input aggregation and timing parameters configurable",
+  "description": "Aggregates multiple function calls (promises or not), making sure the (expensive) function call (e.g. network). It's basically debounce with promises, but all the good names were taken. Extra options make input aggregation and timing parameters configurable",
   "main": "promise-aggregator.js",
   "scripts": {
     "test-watch": "mocha test --watch",
@@ -18,10 +18,10 @@
   "author": "fresidue",
   "license": "ISC",
   "dependencies": {
-    "delay": "^3.0.0",
-    "lodash": "^4.17.10"
+    "delay": "^3.0.0"
   },
   "devDependencies": {
+    "lodash": "^4.17.10",
     "mocha": "^5.2.0",
     "sinon": "^5.0.10",
     "time-span": "^2.0.0"

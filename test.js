@@ -6,7 +6,7 @@ const delay = require('delay');
 const timeSpan = require('time-span');
 const sinon = require('sinon');
 
-const throttle = require('./')
+const throttle = require('./promise-aggregator');
 
 console.log('\n\n\n\n\n\n\n');
 
@@ -354,5 +354,13 @@ describe('stress testing and other stuff that doesn\'t fit above', () => {
       const allowed = compacted.length <= expNum && compacted.length > 0.6 * expNum;
       assert(allowed, 'should be around ' + expNum + ', is ' + compacted.length);
     });
+  });
+
+  it('make sure we export operations modes as expected', () => {
+    const modes = throttle.modes;
+    assert(_.size(modes) === 3);
+    assert(modes.NULL === 'NULL');
+    assert(modes.ERROR === 'ERROR');
+    assert(modes.REPEAT === 'REPEAT');
   });
 });
