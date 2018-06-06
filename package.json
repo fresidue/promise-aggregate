@@ -23,7 +23,6 @@
   "devDependencies": {
     "lodash": "^4.17.10",
     "mocha": "^5.2.0",
-    "sinon": "^5.0.10",
     "time-span": "^2.0.0"
   }
 }

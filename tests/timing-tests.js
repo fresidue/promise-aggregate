@@ -4,7 +4,6 @@ const assert = require('assert');
 const _ = require('lodash');
 const delay = require('delay');
 const timeSpan = require('time-span');
-const sinon = require('sinon');
 
 const aggregate = require('../promise-aggregator');
 
