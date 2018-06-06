@@ -19,7 +19,7 @@ const defaultOptions = {
 
 const throttleP = (inputFn, opts) => {
   // the fleshed out options
-  const options = _.assign({}, defaultOptions, opts);
+  const options = Object.assign({}, defaultOptions, opts);
   assert(typeof options.replaceArgs === 'function', 'replaceArgs is not a function');
   assert(Number.isFinite(options.wait) && options.wait > 0, 'wait is not a positive number');
   // console.log('options = ', options);
@@ -56,7 +56,7 @@ const throttleP = (inputFn, opts) => {
       }
       // otherwise copy and reset the state
       const now = Date.now();
-      const oldState = _.assign({}, state);
+      const oldState = Object.assign({}, state);
       state.scheduled = null; // cause it succeeded
       state.args = null;
       // If the state did not have args, then nothing is listening anyway. just exit
@@ -80,7 +80,7 @@ const throttleP = (inputFn, opts) => {
   };
 
   const wrapper = function (...args) {
-    const oldState = _.assign({}, state);
+    const oldState = Object.assign({}, state);
     const replacementArgs = options.replaceArgs(args, oldState.args);
     const now = Date.now();
     state.triggeredAt = now;
