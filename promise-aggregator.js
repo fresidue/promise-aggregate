@@ -10,22 +10,47 @@ const modes = {
 };
 
 const defaultOptions = {
-  wait: 300, // ms
   mode: modes.NULL,
+  replaceArgs: (args, prev) => args, // in case we want to accumulate, allow customizer
   leading: true,
   middle: true,
-  replaceArgs: (args, prev) => args, // in case we want to accumulate, allow customizer
+  wait: 300, // ms
+  maxWait: null,
+  minInterval: null,
+  aggregationInterval: null,
 };
 
-const throttleP = (inputFn, opts) => {
+// wrap the aggregate functionality in options handling, so we can separate
+// out the messy options validation etc.
+const applyOptions = (inputFn, opts) => {
   // the fleshed out options
   const options = Object.assign({}, defaultOptions, opts);
+  options.aggregationInterval = options.aggregationInterval || options.wait;
+  options.minInterval = options.minInterval || options.wait;
+  options.maxWait = options.middle ? options.maxWait || options.wait : null;
   assert(typeof options.replaceArgs === 'function', 'replaceArgs is not a function');
   assert(Number.isFinite(options.wait) && options.wait > 0, 'wait is not a positive number');
+  assert(Number.isFinite(options.aggregationInterval) && options.aggregationInterval > 0, 'aggregationInterval is not a positive number');
+  assert(Number.isFinite(options.minInterval) && options.minInterval > 0, 'minInterval is not a positive number');
+  if (options.middle) {
+    assert(Number.isFinite(options.maxWait) && options.maxWait > 0, 'maxWait is not a positive number');
+  } else {
+    assert(!options.maxWait, '!maxWait should true')
+  }
+  // wait and middle are redundant
+  // delete options.wait;
+  // delete options.middle;
   // console.log('options = ', options);
 
+  const aggregator = createAggregator(inputFn, options);
+  aggregator.options = options;
+  return aggregator;
+};
+
+const createAggregator = (inputFn, options) => {
   // and the mutable state of this object
   const state = {
+    isLeading: true,
     args: null,
     scheduled: null,
     triggeredAt: 0, // i.e. 1970
@@ -79,6 +104,7 @@ const throttleP = (inputFn, opts) => {
     return scheduled;
   };
 
+  // the main exposed wrapper that handles 'call' events from outside world
   const wrapper = function (...args) {
     const oldState = Object.assign({}, state);
     const replacementArgs = options.replaceArgs(args, oldState.args);
@@ -122,6 +148,6 @@ const throttleP = (inputFn, opts) => {
   return wrapper;
 };
 
-module.exports = throttleP;
+module.exports = applyOptions;
 module.exports.modes = modes;
 module.exports.defaultOptions = defaultOptions;

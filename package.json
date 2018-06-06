@@ -4,8 +4,8 @@
   "description": "Aggregates multiple function calls (promises or not), making sure the (expensive) function call (e.g. network). It's basically debounce with promises, but all the good names were taken. Extra options make input aggregation and timing parameters configurable",
   "main": "promise-aggregator.js",
   "scripts": {
-    "test-watch": "mocha test --watch",
-    "test": "mocha test"
+    "test-watch": "mocha tests/index --watch",
+    "test": "mocha tests/index"
   },
   "keywords": [
     "promise",

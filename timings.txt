@@ -1,7 +1,32 @@
+
+There are 3 thresholds that apply:
+1) The minimum amount of time in between two calls - minInterval
+2) The maximum amount of time between an attempt and a call - maxWait
+3) The default amount of added aggregation time added due to an attempt - aggregationInterval
+As well as a minor 'leading' option.
+
+How to determine the next delay:
+callDelay = runAt + minInterval - now
+waitDelay = firstTriggeredAt + maxWait - now
+aggregationDelay = lastTriggeredAt + aggregationInterval - now
+
+actualDelay = max(callDelay, aggregationDelay)
+if maxWait then actualDelay = min(actualDelay, waitDelay)
+
+actualDelay = min(callDelay, waitDelay, aggregationDelay)
+
+
+The case below is equates to:
+  minInterval = maxWait = wait
+  if !middle then maxWait = infinity, else maxWait = wait
+
+
+
+*********
+
 The choice is really for leading and middle
 
 There is never less than `wait` interval between two consecutive calls.
-There is 
 
 Leading point: previous
 

@@ -6,7 +6,7 @@ const delay = require('delay');
 const timeSpan = require('time-span');
 const sinon = require('sinon');
 
-const throttle = require('./promise-aggregator');
+const throttle = require('../promise-aggregator');
 
 console.log('\n\n\n\n\n\n\n');
 
@@ -234,9 +234,6 @@ const testConfigs = [
     times: _.times(1001, i => 3 * i),
     stackCreator: createNumbersStack,
     expectedNumNulls: 970, // expect 31 non-nulls
-    // expectedNumErrors: 0,
-    // expectedCompacted: [1, 4, 6, 7],
-    // expectedResTimes: [0, 40, 60, 100, 169, 200, 300],
   },
 
 ];
@@ -269,7 +266,7 @@ _.each(testConfigs, config => {
 
     if (config.expectedNumNulls || config.expectedNumNulls === 0) {
       it('of which ' + config.expectedNumNulls + ' should be null', () => {
-        console.log('last dur = ', resTimes.slice().pop());
+        console.log('total duration = ', resTimes.slice().pop());
         const numNulls = _.filter(results, r => !r).length;
         assert(numNulls === config.expectedNumNulls, 'found ' + numNulls + ', expected ' + config.expectedNumNulls);
       });
