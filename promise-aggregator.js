@@ -74,7 +74,7 @@ const createAggregator = (inputFn, options) => {
           // wasCancelled holds the next schedule to be made
           return wasCancelled;
         } else if (options.mode === modes.ERROR) {
-          return Promise.reject(new Error('scheduled throttle-event was cancelled'))
+          return Promise.reject(new Error('scheduled aggregate-event was cancelled'))
         } else { // modes.NULL
           return null;
         }
@@ -110,7 +110,7 @@ const createAggregator = (inputFn, options) => {
     const replacementArgs = options.replaceArgs(args, oldState.args);
     const now = Date.now();
     state.triggeredAt = now;
-    // first deal with an idle throttle
+    // first deal with an idle state
     if (!state.scheduled) {
       // console.log('got nothing scheduled');
       state.scheduled = schedule(options.wait);

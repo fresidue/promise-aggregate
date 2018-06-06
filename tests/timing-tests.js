@@ -6,7 +6,7 @@ const delay = require('delay');
 const timeSpan = require('time-span');
 const sinon = require('sinon');
 
-const throttle = require('../promise-aggregator');
+const aggregate = require('../promise-aggregator');
 
 console.log('\n\n\n\n\n\n\n');
 
@@ -63,13 +63,13 @@ const isApproximatelyOver = (a, b) => {
   return a > (b - 2) && a < (b + 23);
 };
 
-const compactResults = (results, mode = throttle.modes.NULL) => {
+const compactResults = (results, mode = aggregate.modes.NULL) => {
   switch (mode) {
-    case throttle.modes.NULL:
+    case aggregate.modes.NULL:
       return _.compact(results);
-    case throttle.modes.REPEAT:
+    case aggregate.modes.REPEAT:
       return _.uniq(results);
-    case throttle.modes.ERROR:
+    case aggregate.modes.ERROR:
       return _.compact(_.map(results, r => r instanceof Error ? null : r));
     default:
       throw new Error('invalid mode');
@@ -156,7 +156,7 @@ const testConfigs = [
     describe: 'ERROR mode should work as expected',
     options: {
       wait: 100,
-      mode: throttle.modes.ERROR
+      mode: aggregate.modes.ERROR
     },
     fn: a => a,
     times: [0, 20, 40, 60, 129, 169, 222],
@@ -170,7 +170,7 @@ const testConfigs = [
     describe: 'REPEAT mode should work as expected',
     options: {
       wait: 100,
-      mode: throttle.modes.REPEAT
+      mode: aggregate.modes.REPEAT
     },
     fn: a => a,
     times: [0, 20, 40, 60, 129, 169, 222],
@@ -250,7 +250,7 @@ _.each(testConfigs, config => {
     };
 
     // create the data
-    const fn = throttle(config.fn, config.options);
+    const fn = aggregate(config.fn, config.options);
     const stack = config.stackCreator(config.times);
     before('run series', function (done) {
       this.timeout(config.times.slice().pop() * 2);
@@ -317,7 +317,7 @@ describe('stress testing and other stuff that doesn\'t fit above', () => {
     // create the data
     before('run series', done => {
       const duration = timeSpan();
-      const fn = throttle(a => a, {wait: 25});
+      const fn = aggregate(a => a, {wait: 25});
       let count = 0;
       let lastFn = null;
       while (duration() < 501) {
@@ -354,7 +354,7 @@ describe('stress testing and other stuff that doesn\'t fit above', () => {
   });
 
   it('make sure we export operations modes as expected', () => {
-    const modes = throttle.modes;
+    const modes = aggregate.modes;
     assert(_.size(modes) === 3);
     assert(modes.NULL === 'NULL');
     assert(modes.ERROR === 'ERROR');
