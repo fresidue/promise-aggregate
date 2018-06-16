@@ -100,16 +100,6 @@ const createAggregator = (inputFn, options) => {
     const replacementArgs = options.replaceArgs(args, state.args);
     const now = Date.now();
 
-    const callDelay = state.runAt + options.minInterval - now;
-
-    let wait = Math.max(callDelay, options.aggInterval);
-    if (options.maxWait) {
-      const maxWaitAllowed = state.firstTriggeredAt + options.maxWait - now;
-      wait = Math.min(wait, maxWaitAllowed);
-    }
-
-
-    // state.triggeredAt = now;
     // first deal with an idle state
     if (!state.scheduled) {
       // console.log('got nothing scheduled');
@@ -128,18 +118,17 @@ const createAggregator = (inputFn, options) => {
     }
     // otherwise deal with the old scheduled, and create a new
     else {
+      // determine the desired wait duration
       if (!state.firstTriggeredAt) {
         state.firstTriggeredAt = now;
       }
-      // console.log('got args scheduled: ', state.args);
       const callDelay = oldState.runAt + options.minInterval - now;
       let wait = Math.max(callDelay, options.aggInterval);
       if (options.maxWait) {
         const maxWaitAllowed = state.firstTriggeredAt + options.maxWait - now;
         wait = Math.min(wait, maxWaitAllowed);
       }
-      // const middleWait = oldState.runAt + options.wait - now;
-      // const wait = options.middle ? middleWait : options.wait;
+
       // it IS an edgecase, but the timing CAN be such that wait < 0 (especially
       // if the calls are coming in very quickly). If so, just execute directly
       if (wait <= 0) {

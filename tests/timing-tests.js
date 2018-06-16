@@ -329,7 +329,7 @@ describe('stress testing and other stuff that doesn\'t fit above', () => {
       }
       return lastFn;
     });
-    const expNum = 13;
+    const expNum = 14;
     // This one gets a bit squishy. I think it's just blowing up the
     // execution stack (?). The resTimes just don't make any sense
     it('expecting ca ' + expNum + ' compacted responses', () => {
