@@ -16,7 +16,7 @@
     "aggregator"
   ],
   "author": "fresidue",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "delay": "^3.0.0"
   },
