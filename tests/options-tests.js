@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const _ = require('lodash');
-const aggregate = require('../promise-aggregator');
+const aggregate = require('../promise-aggregator').aggregate;
 
 const matches = (options, expected) => {
   const subset = _.pick(options, _.keys(expected));
@@ -16,54 +16,30 @@ describe('Make sure options are interpreted correctly', () => {
     console.log('options = ', options);
     const expected = {
       mode: 'NULL',
-      leading: true,
       maxWait: 300,
       minInterval: 300,
-      aggregationInterval: 300
+      aggInterval: 0
     };
     assert(matches(options, expected));
   });
 
-  it('wait propagates to maxWait, minInterval, and aggregationInterval', () => {
-    const wait = 348;
-    const options = aggregate(a => a, {wait}).options;
-    console.log('options = ', options);
-    const expected = {
-      mode: 'NULL',
-      leading: true,
-      maxWait: wait,
-      minInterval: wait,
-      aggregationInterval: wait
-    };
-    assert(matches(options, expected));
-  });
-
-  it('setting maxWait, minInterval, and aggregationInterval overrides wait', () => {
-    const wait = 348;
+  it('setting mode, replaceArgs, maxWait, minInterval, and aggInterval overrides defaults', () => {
+    const mode = 'ERROR';
+    const replaceArgs = a => a;
     const maxWait = 6767;
     const minInterval = 234;
-    const aggregationInterval = 438034;
+    const aggInterval = 438034;
     const options = aggregate(a => a, {
-      wait, maxWait, minInterval, aggregationInterval
+      mode, replaceArgs, maxWait, minInterval, aggInterval
     }).options;
     console.log('options = ', options);
     const expected = {
-      mode: 'NULL',
-      leading: true,
+      mode,
+      replaceArgs,
       maxWait,
       minInterval,
-      aggregationInterval
+      aggInterval
     };
     assert(matches(options, expected));
-  });
-
-  it('setting middle = false overrides maxWait (!maxWait means infinity)', () => {
-    const middle = false;
-    const maxWait = 1234;
-    const options = aggregate(a => a, {
-      middle, maxWait
-    }).options;
-    console.log('options = ', options);
-    assert(!options.maxWait)
   });
 });
