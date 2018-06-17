@@ -5,8 +5,8 @@ const _ = require('lodash');
 const delay = require('delay');
 const timeSpan = require('time-span');
 
-const aggregate = require('../promise-aggregator').aggregate;
-const modes = require('../promise-aggregator').modes;
+const aggregate = require('../promise-aggregate');
+const modes = aggregate.modes;
 
 console.log('\n\n\n\n\n\n\n');
 

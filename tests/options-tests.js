@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const _ = require('lodash');
-const aggregate = require('../promise-aggregator').aggregate;
+const aggregate = require('../promise-aggregate');
 
 const matches = (options, expected) => {
   const subset = _.pick(options, _.keys(expected));

@@ -1,17 +1,17 @@
-# promise-aggregator
+# promise-aggregate
 
-promise-aggregator, given an input function `fn` (regular or promise) that is expensive or otherwise needs to be managed, helps control how often `fn` actually executes.
+promise-aggregate, given an input function `fn` (regular or promise) that is expensive or otherwise needs to be managed, helps control how often `fn` actually executes.
 
 This is essentially a variant of debounce, with some additional configurable elements. [debounce-promise](https://www.npmjs.com/package/debounce-promise) for example works very similarly, is slightly less complex, but is not as configurable.
 
 ## install
 ```
-$ npm install promise-aggregator
+$ npm install promise-aggregate
 ```
 
 ## usage
 ```js
-const aggregator = require('promise-aggregator');
+const aggregate = require('promise-aggregate');
 // and the function (promise or otherwise)
 // that we want to manage
 const fn = async a => a;
@@ -21,7 +21,10 @@ const options = {
   aggInterval: 100,
   maxWait: 400
 };
-const aggFn = aggregator.aggregate(fn, options);
+const aggFn = aggregate(fn, options);
+
+// the actual options being used can be accessed:
+const activeOptions = aggFn.options;
 
 // just as an example
 const loop = count => {
@@ -44,7 +47,12 @@ loop(1);
 
 ## API
 
-### .modes
+>where `aggregate = require('promise-aggregate')`
+
+## aggregate(fn, [options])
+Wraps `fn` in an aggregator (i.e. `aggFn`). Any options parameters supplied will override defaultOptions. The resulting options object is (at present at least) validated to not have silly values. Validation will probably disappear however. Silly in, silly out. Usage as above.
+
+### aggregate.modes
 exposes the allowed mode types (which determines what happens when execution of the input function is frustrated)
 ```js
 {
@@ -60,7 +68,7 @@ exposes the allowed mode types (which determines what happens when execution of 
 ###### REPEAT
 `aggFn` will eventually resolve the result of the next function execution (many promises may potentially appear to resolve at once)
 
-### .defaultOptions
+### aggregate.defaultOptions
 exposes the default options. Warning: mutating this object WILL affect aggregated functions created post mutation.
 ```js
 {
@@ -79,9 +87,6 @@ Once `aggFn` is called, execution will be delayed by `aggInterval`, attempting t
 Since using `aggInterval` repeatedly can hypothetically delay `fn` execution indeterminately, `maxWait` is set as the maximum amount of time allowed between the 'first' execution call and the next actual execution. (positive number, `> minInterval`, infinity IS allowed)
 ###### replaceArgs
 The function that dictates how to aggregate `fn` arguments. The default behavior is that the latest arguments `aggFn` replaces any 'unused' old arguments [Some examples below](## Using replaceArgs)
-
-## .aggregate(fn, [options])
-Wraps `fn` in an aggregator. Any options parameters supplied will override defaultOptions. The resulting options object is (at present at least) validated to not have silly values. Validation will probably disappear completely however. Silly in, silly out. Returns aggregating function `aggFn` which forwards arguments to `fn` (depending upon implementation)
 
 ### aggFn.options
 The **actual** options object that aggFn is operating with. **Warning:** mutations done to this object WILL be effective immediately

@@ -1,6 +1,6 @@
 'use strict';
 
-describe('Testing promise aggregator', () => {
+describe('Testing promise aggregate', () => {
 
   describe('Options Tests', () => {
     require('./options-tests');

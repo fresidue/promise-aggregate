@@ -1,8 +1,8 @@
 {
-  "name": "promise-aggregator",
-  "version": "1.0.0",
-  "description": "Aggregates multiple function calls (promises or not), making sure the (expensive) function call (e.g. network) gets throttled. It's basically debounce with promises. Extra options make input aggregation and timing parameters configurable",
-  "main": "promise-aggregator.js",
+  "name": "promise-aggregate",
+  "version": "0.0.1",
+  "description": "promise-aggregator, given an input function `fn` (regular or promise) that is expensive or otherwise needs to be managed, helps control how often `fn` actually executes",
+  "main": "promise-aggregate.js",
   "scripts": {
     "test-watch": "mocha tests/index --watch",
     "test": "mocha tests/index"

@@ -140,8 +140,10 @@ const applyOptions = (inputFn, opts) => {
   return aggregator;
 };
 
-module.exports = {
-  aggregate: applyOptions,
+// Make the exports a nice shape
+const aggregate = applyOptions;
+Object.assign(aggregate, {
   modes,
   defaultOptions
-};
+});
+module.exports = aggregate;
