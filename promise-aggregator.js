@@ -64,7 +64,7 @@ const createAggregator = (inputFn, options) => {
           // wasCancelled holds the next schedule to be made
           return wasCancelled;
         } else if (options.mode === modes.ERROR) {
-          return Promise.reject(new Error('scheduled aggregate-event was cancelled'))
+          return Promise.reject(new Error('scheduled execution was cancelled'))
         } else { // modes.NULL
           return null;
         }
@@ -122,12 +122,10 @@ const createAggregator = (inputFn, options) => {
       if (!state.firstTriggeredAt) {
         state.firstTriggeredAt = now;
       }
-      const callDelay = oldState.runAt + options.minInterval - now;
-      let wait = Math.max(callDelay, options.aggInterval);
-      if (options.maxWait) {
-        const maxWaitAllowed = state.firstTriggeredAt + options.maxWait - now;
-        wait = Math.min(wait, maxWaitAllowed);
-      }
+      const minCallDelay = oldState.runAt + options.minInterval - now;
+      const callDelay = Math.max(minCallDelay, options.aggInterval);
+      const maxWaitAllowed = state.firstTriggeredAt + options.maxWait - now;
+      const wait = Math.min(callDelay, maxWaitAllowed);
 
       // it IS an edgecase, but the timing CAN be such that wait < 0 (especially
       // if the calls are coming in very quickly). If so, just execute directly
@@ -150,6 +148,8 @@ const createAggregator = (inputFn, options) => {
   return wrapper;
 };
 
-module.exports = {aggregate: applyOptions};
-module.exports.modes = modes;
-module.exports.defaultOptions = defaultOptions;
+module.exports = {
+  aggregate: applyOptions,
+  modes,
+  defaultOptions
+};
