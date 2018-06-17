@@ -24,5 +24,16 @@
     "lodash": "^4.17.10",
     "mocha": "^5.2.0",
     "time-span": "^2.0.0"
-  }
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fresidue/promise-aggregate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fresidue/promise-aggregate/issues"
+  },
+  "homepage": "https://github.com/fresidue/promise-aggregate#readme"
 }
