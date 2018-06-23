@@ -1,6 +1,6 @@
 {
   "name": "promise-aggregate",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "promise-aggregator, given an input function `fn` (regular or promise) that is expensive or otherwise needs to be managed, helps control how often `fn` actually executes",
   "main": "promise-aggregate.js",
   "scripts": {
