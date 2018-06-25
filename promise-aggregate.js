@@ -63,7 +63,7 @@ const createAggregator = (inputFn, options) => {
       state.firstTriggeredAt = null;
       state.lastRunAt = now;
       state.scheduled = schedule(options.minInterval);
-      return Promise.resolve(inputFn.apply(null, oldState.args));
+      return Promise.resolve(inputFn(...oldState.args));
     });
 
     scheduled.cancel = nextScheduled => {
@@ -106,7 +106,7 @@ const createAggregator = (inputFn, options) => {
         state.firstTriggeredAt = null;
         state.lastRunAt = now;
         state.args = null;
-        const rv =  Promise.resolve(inputFn.apply(null, replacementArgs));
+        const rv = Promise.resolve(inputFn(...replacementArgs));
         oldState.scheduled.cancel(options.mode === modes.REPEAT ? rv : true);
         return rv;
       } else {
